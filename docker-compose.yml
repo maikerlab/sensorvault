@@ -23,6 +23,14 @@ services:
     volumes:
       - pg_data:/pgdata
 
+  grafana:
+    image: grafana/grafana
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana_storage:/var/lib/grafana
+
   mqtt_broker:
     image: eclipse-mosquitto
     ports:
@@ -37,6 +45,7 @@ services:
 volumes:
   nats_data:
   pg_data:
+  grafana_storage:
 
 networks:
   iot_network:

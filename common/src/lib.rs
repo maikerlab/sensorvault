@@ -1,3 +1,5 @@
+pub mod settings;
+
 use std::fmt::{Display, Formatter};
 use serde::{Deserialize, Serialize};
 

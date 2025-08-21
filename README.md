@@ -51,7 +51,7 @@ This ensures that no sensor measurements are lost and sensors are not dependent 
 ├── common              # Common data structures shared across the workspace
 ├── mqtt_worker         # Receives measurements from MQTT broker and forwards it to NATS
 ├── dispatcher          # Receives measurements from NATS and saves them in the database
-├── sensor_store        # Provides methods for data access
+├── db        # Provides methods for data access
 ├── Cargo.toml          # Workspace members, dependencies, ...
 └── docker-compose.yml  # Services to run the whole system locally
 ```

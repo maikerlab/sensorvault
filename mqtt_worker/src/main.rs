@@ -4,8 +4,8 @@ use common::SenMLRecord;
 use rand::Rng;
 use rumqttc::{AsyncClient, Event, Incoming, MqttOptions, QoS};
 use std::time::Duration;
-use std::env;
 use tokio::time;
+use common::settings::Settings;
 
 async fn publish_measurement(context: &Context, sensor_id: i32, record: SenMLRecord) -> Result<(), async_nats::Error> {
     let payload = serde_cbor::to_vec(&record)?;
@@ -57,11 +57,11 @@ async fn pub_demo(ctx: &Context) -> Result<(), async_nats::Error> {
 #[tokio::main]
 async fn main() -> Result<(), async_nats::Error> {
     // Connect to the NATS server
-    let nats_url = env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
-    let client = async_nats::connect(nats_url).await?;
-    let nats = async_nats::jetstream::new(client);
+    let settings = Settings::load();
+    println!("{:?}", settings);
+    let nats = messaging::connect_nats().await?;
 
-    let mut mqttoptions = MqttOptions::new("rumqtt-async", "localhost", 1883);
+    let mut mqttoptions = MqttOptions::new("rumqtt-async", settings.mqtt_host.unwrap_or("localhost".to_string()), settings.mqtt_port.unwrap_or(1883));
     mqttoptions.set_keep_alive(Duration::from_secs(5));
 
     let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);

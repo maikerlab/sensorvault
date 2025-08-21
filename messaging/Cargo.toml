@@ -1,0 +1,8 @@
+[package]
+name = "messaging"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+async-nats = "0.42.0"
+common = { path = "../common" }

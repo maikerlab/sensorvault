@@ -4,5 +4,6 @@ members = [
     "common",
     "dispatcher",
     "mqtt_worker",
-    "sensor_store"
+    "db",
+    "messaging"
 ]

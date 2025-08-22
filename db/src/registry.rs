@@ -1,4 +1,5 @@
 use sqlx::{FromRow, PgPool};
+use anyhow::Result;
 
 #[derive(FromRow)]
 pub struct Sensor {
@@ -17,7 +18,7 @@ pub async fn register_sensor(
     id: i32,
     sensor_type: &str,
     location: &str,
-) -> Result<i64, sqlx::Error> {
+) -> Result<i64> {
     sqlx::query!(
         r#"
         INSERT INTO sensors (id, type, location)
@@ -39,7 +40,7 @@ pub async fn register_sensor(
     Ok(row.0)
 }
 
-pub async fn get_sensor_by_id(pool: &PgPool, id: i32) -> Result<Sensor, sqlx::Error> {
+pub async fn get_sensor_by_id(pool: &PgPool, id: i32) -> Result<Sensor> {
     let sensor = sqlx::query_as!(
         Sensor,
         r#"SELECT * FROM sensors WHERE id = $1"#,

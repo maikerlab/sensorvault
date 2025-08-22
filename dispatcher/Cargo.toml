@@ -11,4 +11,6 @@ serde_cbor = "0.11"
 common = { path = "../common" }
 db = { path = "../db" }
 messaging = { path = "../messaging" }
-anyhow = "1.0.99"
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

@@ -3,8 +3,9 @@ use async_nats::jetstream::consumer::Consumer;
 use async_nats::jetstream::consumer::pull::Config;
 use async_nats::jetstream::Context;
 use common::settings::Settings;
+use anyhow::Result;
 
-pub async fn connect_nats() -> Result<Context, async_nats::Error> {
+pub async fn connect_nats() -> Result<Context> {
     let settings = Settings::load();
     println!("Connecting to NATS at {}", settings.nats_url);
     let client = async_nats::connect(settings.nats_url).await?;
@@ -12,7 +13,7 @@ pub async fn connect_nats() -> Result<Context, async_nats::Error> {
     Ok(jet_stream)
 }
 
-pub async fn subscribe(nats: &Context, stream_name: String, subjects: Vec<String>) -> Result<Consumer<Config>, async_nats::Error> {
+pub async fn subscribe(nats: &Context, stream_name: String, subjects: Vec<String>) -> Result<Consumer<Config>> {
     // First we create a stream and bind to it.
     let stream = nats
         .create_stream(jetstream::stream::Config {

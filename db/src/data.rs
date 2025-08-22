@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use common::SenMLRecord;
+use anyhow::Result;
 
 #[derive(sqlx::FromRow, Debug)]
 pub struct SensorData {
@@ -10,7 +11,7 @@ pub struct SensorData {
     pub unit: Option<f64>,
 }
 
-pub async fn save_record(pool: &PgPool, record: SenMLRecord, sensor_id: i32) -> Result<(), sqlx::Error> {
+pub async fn save_record(pool: &PgPool, record: SenMLRecord, sensor_id: i32) -> Result<()> {
     let ts = chrono::DateTime::from_timestamp(record.timestamp.unwrap_or(chrono::Utc::now().timestamp()), 0);
     sqlx::query!(
         r#"

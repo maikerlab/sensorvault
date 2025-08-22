@@ -1,9 +1,14 @@
 use common::SenMLRecord;
 use futures::StreamExt;
 use db::data::save_record;
+use tracing::info;
+use anyhow::Result;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<()> {
+    // init logging
+    tracing_subscriber::fmt::init();
+
     let db = db::connect_postgres().await.expect("cannot connect to database");
     let nats = messaging::connect_nats().await.expect("cannot connect to NATS JetStream");
 
@@ -14,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
     let mut messages = consumer.messages().await?;
 
     // Iterate over messages.
-    println!("waiting for messages...");
+    info!("waiting for messages from workers...");
     while let Some(message) = messages.next().await {
         let message = message?;
 
@@ -26,9 +31,10 @@ async fn main() -> anyhow::Result<()> {
         let record: SenMLRecord = serde_cbor::from_slice(&message.payload)
             .or_else(|_| serde_json::from_slice(&message.payload))
             .expect("error at CBOR or JSON deserialization");
-        println!("{}", record);
+        info!("Received SenMLRecord: {}", record);
 
         save_record(&db, record, sensor_id).await.expect("error while saving sensor data");
+        info!("saved sensor data");
 
         // acknowledge the message
         message.ack().await.map_err(|e| anyhow::anyhow!(e))?;

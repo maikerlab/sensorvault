@@ -5,5 +5,11 @@ members = [
     "dispatcher",
     "mqtt_worker",
     "db",
-    "messaging"
+    "messaging",
+    "sensor_simulator"
 ]
+
+[workspace.dependencies]
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", default-features = true, features = ["local-time"] }
+anyhow = "1.0.99"

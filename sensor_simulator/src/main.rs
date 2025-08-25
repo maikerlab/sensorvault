@@ -2,7 +2,7 @@ use std::time::Duration;
 use clap::{Parser, Subcommand};
 use rumqttc::{Client, Connection, MqttOptions, QoS};
 use tracing::{debug, info};
-use common::settings::Settings;
+use common::settings::AppConfig;
 use anyhow::Result;
 use rand::prelude::IndexedRandom;
 use rand::Rng;
@@ -11,12 +11,12 @@ use rand::Rng;
 #[command(version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Commands,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// does testing things
+    /// send a message to the worker(s)
     Send {
         /// topic to send to
         topic: String,
@@ -27,6 +27,7 @@ enum Commands {
     },
     /// sends measurements in an endless loop
     Loop {
+        /// type of the sensor (temp or humidity)
         sensor_type: Option<String>,
     }
 }
@@ -72,24 +73,21 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     debug!("{:?}", cli);
 
-    let settings = Settings::load();
-    let host = settings.mqtt_host.unwrap_or("localhost".to_string());
-    let port = settings.mqtt_port.unwrap_or(1883);
-    info!("Connecting to MQTT broker: {}:{}", host, port);
-    let mut mqttoptions = MqttOptions::new("sensor-simulator", host, port);
+    let config = AppConfig::load();
+    info!("Connecting to MQTT broker: {}:{}", config.mqtt.host, config.mqtt.port);
+    let mut mqttoptions = MqttOptions::new("sensor-simulator", config.mqtt.host, config.mqtt.port);
     mqttoptions.set_keep_alive(Duration::from_secs(5));
     let (client, mut connection) = Client::new(mqttoptions, 10);
 
     match &cli.command {
-        Some(Commands::Send { topic, msg, times }) => {
+        Commands::Send { topic, msg, times } => {
             for _ in 0..times.unwrap_or(1) {
                 handle_send_msg(&client, &mut connection, topic.as_str(), msg.as_str());
             }
         }
-        Some(Commands::Loop { sensor_type }) => {
+        Commands::Loop { sensor_type } => {
             handle_send_loop(&client, &mut connection, sensor_type.clone());
         }
-        None => {},
     }
 
     Ok(())

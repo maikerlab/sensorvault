@@ -32,7 +32,9 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - grafana_storage:/var/lib/grafana
+      - grafana_storage:/var/lib/grafana/grafana.db
+    networks:
+      - iot_network
 
   mqtt_broker:
     image: eclipse-mosquitto

@@ -2,15 +2,12 @@ use async_nats::jetstream;
 use async_nats::jetstream::consumer::Consumer;
 use async_nats::jetstream::consumer::pull::Config;
 use async_nats::jetstream::Context;
-use common::settings::Settings;
 use anyhow::Result;
 use tracing::{info};
 
-pub async fn connect_nats() -> Result<Context> {
-    let nats_url = Settings::load()
-        .get_nats_url_or_default();
-    info!("Connecting to NATS at {}", nats_url);
-    let client = async_nats::connect(nats_url).await?;
+pub async fn connect_nats(url: String) -> Result<Context> {
+    info!("Connecting to NATS at {}", url);
+    let client = async_nats::connect(url).await?;
     let jet_stream = jetstream::new(client);
     Ok(jet_stream)
 }

@@ -3,6 +3,7 @@ use futures::StreamExt;
 use db::data::save_record;
 use tracing::{error, info};
 use anyhow::Result;
+use common::settings::AppConfig;
 
 const STREAM_NAME_TEMPERATURE: &str = "TEMPERATURE_SENSOR_EVENTS";
 
@@ -11,8 +12,9 @@ async fn main() -> Result<()> {
     // init logging
     tracing_subscriber::fmt::init();
 
-    let db = db::connect_postgres().await?;
-    let nats = messaging::connect_nats().await?;
+    let config = AppConfig::load();
+    let db = db::connect_postgres(config.database.url).await?;
+    let nats = messaging::connect_nats(config.nats.url).await?;
 
     let stream_name = String::from(STREAM_NAME_TEMPERATURE);
     let subjects = vec!["temp.>".into()];

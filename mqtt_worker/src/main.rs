@@ -4,7 +4,7 @@ use common::SenMLRecord;
 use rumqttc::{AsyncClient, Event, Incoming, MqttOptions, QoS};
 use std::time::Duration;
 use tracing::{debug, error, info};
-use common::settings::Settings;
+use common::settings::AppConfig;
 use anyhow::{anyhow, Result};
 
 async fn publish_measurement(context: &Context, sensor_id: i32, record: SenMLRecord) -> Result<()> {
@@ -57,12 +57,10 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     // Connect to the NATS server
-    let settings = Settings::load();
-    let nats = messaging::connect_nats().await.
-        expect("Failed to connect to NATS - is the server running and the URL set correctly?");
+    let settings = AppConfig::load();
+    let nats = messaging::connect_nats(settings.nats.url).await?;
 
-    let (mqtt_host, mqtt_port) = settings.get_mqtt_host_and_port_or_default();
-    let mut mqttoptions = MqttOptions::new("rumqtt-async", mqtt_host, mqtt_port);
+    let mut mqttoptions = MqttOptions::new("mqtt_worker", settings.mqtt.host, settings.mqtt.port);
     mqttoptions.set_keep_alive(Duration::from_secs(5));
 
     let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);

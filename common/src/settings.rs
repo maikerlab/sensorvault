@@ -1,22 +1,42 @@
 use config::FileFormat::Toml;
 use config::{Config, File};
 use serde::Deserialize;
-use tracing::warn;
 
 #[derive(Deserialize, Clone, Debug)]
-pub struct Settings {
-    pub database_url: Option<String>,
-    pub nats_url: Option<String>,
-    pub mqtt_host: Option<String>,
-    pub mqtt_port: Option<u16>,
+pub struct AppConfig {
+    pub database: DatabaseSettings,
+    pub nats: NatsSettings,
+    pub mqtt: MqttSettings,
 }
 
-impl Settings {
+#[derive(Deserialize, Clone, Debug)]
+pub struct DatabaseSettings {
+    pub url: String,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct NatsSettings {
+    pub url: String,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct MqttSettings {
+    pub host: String,
+    pub port: u16,
+}
+
+impl AppConfig {
     pub fn load() -> Self {
         let settings_file = File::new("settings.toml", Toml);
         let settings = Config::builder()
             .add_source(settings_file.required(false))
-            .add_source(config::Environment::with_prefix("IOT"))
+            .add_source(config::Environment::with_prefix("IOT")
+                .try_parsing(true)
+                .separator("_"))
+            .set_default("database.url", "postgres://iot:sensor@localhost/sensor_db").unwrap()
+            .set_default("nats.url", "nats://localhost:4222").unwrap()
+            .set_default("mqtt.host", "localhost").unwrap()
+            .set_default("mqtt.port", 1883).unwrap()
             .build()
             .expect("Failed to load settings");
         settings
@@ -24,29 +44,4 @@ impl Settings {
             .expect("Failed to parse settings")
     }
 
-    pub fn get_database_url_or_default(&self) -> String {
-        self.database_url.clone().unwrap_or_else(|| {
-            warn!("DATABASE_URL not set, using default");
-            "postgres://iot:sensor@localhost/sensor_db".to_string()
-        })
-    }
-
-    pub fn get_nats_url_or_default(&self) -> String {
-        self.nats_url.clone().unwrap_or_else(|| {
-            warn!("NATS_URL not set, using default");
-            "nats://localhost:4222".to_string()
-        })
-    }
-
-    pub fn get_mqtt_host_and_port_or_default(&self) -> (String, u16) {
-        let mqtt_host = self.mqtt_host.clone().unwrap_or_else(|| {
-            warn!("MQTT_HOST host not set, using default");
-            "localhost".to_string()
-        });
-        let mqtt_port = self.mqtt_port.unwrap_or_else(|| {
-            warn!("MQTT_PORT host not set, using default");
-            1883
-        });
-        (mqtt_host, mqtt_port)
-    }
 }

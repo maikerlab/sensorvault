@@ -8,34 +8,30 @@ Collects data from sensors, makes them available for visualization and detecting
 
 ### Sensor Layer
 
-- The goal is to be as flexible as possible and support various sensor types and the most common networking protocols and data structures
-- As a first step, only MQTT is supported
-- There is a nice integration in HomeAssistant (Zigbee2MQTT), where we can collect sensor data from our Smart Home devices
+- In a real-world scenario we have multiple sensors, each located in a different area, inside a machine/device
+- Challenge: Each sensor could have a different network interface (e.g. WiFi, Ethernet, LoRaWAN), speak a different communication protocol, or other compatibility issues
+- The goal is to support the most common networking protocols and data structures, so we can integrate as much sensors as possible
+- As a first step, only MQTT is supported. The system can be extended in the future to support more protocols
+- The [Zigbee2MQTT](https://www.zigbee2mqtt.io/) bridge is also supported, so you can collect sensor data from many of your Smart Home devices
 
-### Workers
+### SensorVault
 
-- Are responsible for receiving measurements from sensors
-- Can support receiving measurements by any communication method, like MQTT, HTTP/REST, LoRaWAN etc...
-- As a first start, the `collector` is implemented, where sensors can publish measurements to
-- Any worker must convert the sensor values (which could be of different formats) to a `SenMLRecord`, encode it in the CBOR format and forward the package to the NATS server
-- Benefit: Ideally sensors already send their measurements in the SenML format, so we can just forward it
-
-### Database
-
-TimeseriesDB is used as the database for persisting sensor values.
+- The core of this project: Data from sensors should be made available for visualization, analyzing, detecting patterns and potential failures early (Keyword: "Predictive Maintenance")
+- The **collector** service is responsible for receiving measurements from sensors and persisting them in a database
+- All data received by sensors is saved in a [TimescaleDB](https://github.com/timescale/timescaledb)
+- Grafana can be used to aggregate and visualize the sensor data on a Dashboard
 
 ## Project Structure
 
 ```shell
 .
 ├── docs                # Documentation
-├── common              # Common data structures shared across the workspace
-├── dispatcher          # Receives measurements from NATS and saves them in the database
-├── collector         # Receives measurements from MQTT broker and forwards it to NATS
-├── mqtt_sim    # CLI application for testing - e.g. publish sensor measurements to the collector
+├── common              # Common data structures shared between services
+├── collector           # Receives measurements from MQTT broker and saves them to database
+├── mqtt_sim            # CLI application for testing - e.g. publish sensor measurements to the collector
 ├── mosquitto           # Config for the Mosquitto MQTT broker running in Docker
-├── Cargo.toml          # Workspace members, dependencies, ...
-└── docker-compose.yml  # Services to run the whole system locally in Docker
+├── Cargo.toml          # Cargo manifest for this workspace
+└── docker-compose.yml  # All services to run the whole system locally in Docker containers
 ```
 
 ## Get started
@@ -51,21 +47,15 @@ docker-compose up
 This will run:
 
 - `mqtt_broker`: Mosquitto MQTT Broker, running at port 1883
-  - `collector` subscribes to messages at topic `sensors/+/+` (wildcards mean "sensor_type/payload")
+  - `collector` subscribes to messages at topic `sensors/+/+` (wildcards mean "sensor_type/id")
   - `mqtt_sim` simulates an MQTT sensor and publishes messages to the broker
 - `db`: PostgreSQL database, running at port 5432
   - Required for collector to save the sensor measurements
-- `grafana`: For data analysis and alerting (and potentially much more in the future), UI running at [localhost:3000](http://localhost:3000/)
+- `grafana`: For data visualization and alerting (and potentially much more in the future), UI running at [localhost:3000](http://localhost:3000/)
 
 ### Binaries
 
-Run `dispatcher` to receive sensor measurements:
-
-```shell
-cargo run -p dispatcher
-```
-
-Run `collector` to subscribe to sensor measurements from MQTT and forward it to NATS and Dispatcher:
+Run `collector` to receive sensor measurements via MQTT and save them in the database:
 
 ```shell
 cargo run -p collector
@@ -91,7 +81,7 @@ Of course you can also use your favorite MQTT client (like Eclipse Mosquitto):
 mosquitto_pub -h localhost -p 1883 -t /sensors/temp/1 -m "23.5"
 ```
 
-...or as JSON:
+...or as JSON in SenML format:
 
 ```json
 {

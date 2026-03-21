@@ -12,7 +12,7 @@ services:
     volumes:
       - pg_data:/pgdata
     networks:
-      - iot_network
+      - sha_network
 
   grafana:
     image: grafana/grafana
@@ -22,7 +22,7 @@ services:
     volumes:
       - grafana_storage:/var/lib/grafana
     networks:
-      - iot_network
+      - sha_network
 
   mqtt_broker:
     image: eclipse-mosquitto
@@ -33,7 +33,7 @@ services:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
     networks:
-      - iot_network
+      - sha_network
 
   collector:
     build:
@@ -46,11 +46,11 @@ services:
     depends_on:
       - mqtt_broker
     networks:
-      - iot_network
+      - sha_network
 
 volumes:
   pg_data:
   grafana_storage:
 
 networks:
-  iot_network:
+  sha_network:

@@ -1,1 +1,1 @@
-docker build -f collector/Dockerfile -t iot-gateway/collector .
+docker build -f collector/Dockerfile -t sensor-health-analyzer/collector .

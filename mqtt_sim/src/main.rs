@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use common::settings::AppConfig;
+use rand::RngExt;
 use rand::prelude::IndexedRandom;
-use rand::{RngExt};
 use rumqttc::{Client, Connection, MqttOptions, QoS};
 use std::time::Duration;
 use tracing::{debug, info};
@@ -33,10 +33,10 @@ enum Commands {
 }
 
 fn handle_send_msg(mqtt_client: &Client, connection: &mut Connection, topic: &str, payload: &str) {
-    println!("Sending message: {payload}");
+    info!("Sending message: {payload}");
     mqtt_client
         .publish(topic, QoS::AtLeastOnce, true, payload.as_bytes())
-        .expect("error publishing messasge");
+        .expect("error publishing message");
     connection.iter().take(3).for_each(drop);
 }
 
@@ -45,7 +45,7 @@ fn handle_send_loop(
     connection: &mut Connection,
     sensor_type: Option<String>,
 ) {
-    let available_types = vec!["temp", "humidity"];
+    let available_types = vec!["temperature", "humidity"];
     loop {
         let mut rng = rand::rng();
         let sensor_type = match &sensor_type {
@@ -53,7 +53,7 @@ fn handle_send_loop(
             Some(st) => st.as_str(),
         };
         let (sensor_id, value) = match sensor_type {
-            "temp" => (rng.random_range(1..5), rng.random_range(-20.0..50.0)),
+            "temperature" => (rng.random_range(1..5), rng.random_range(-20.0..50.0)),
             "humidity" => (rng.random_range(6..10), rng.random_range(0.0..100.0)),
             _ => (1, 0.0),
         };

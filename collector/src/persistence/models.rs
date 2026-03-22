@@ -37,7 +37,9 @@ impl Display for SensorData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "[{}] id={} value={}",
-            self.time.format("%d.%m.%Y %H:%M:%S"), self.sensor_id, self.value
+            self.time.format("%d.%m.%Y %H:%M:%S"),
+            self.sensor_id,
+            self.value
         ))
     }
 }

@@ -1,0 +1,127 @@
+pub mod decoder;
+mod input;
+
+use crate::ingestion::decoder::raw::{channel_from_topic, input_label};
+use crate::ingestion::decoder::{DecodedSensorReading, DecoderRegistry};
+use crate::ingestion::input::RawInput;
+use crate::persistence::Database;
+use crate::persistence::models::Sensor;
+use chrono::Utc;
+use common::models::GenericSensorReading;
+use common::settings::MqttSettings;
+use rumqttc::Packet::Publish;
+use rumqttc::{AsyncClient, Event, MqttOptions, QoS};
+use sqlx::types::Uuid;
+use std::time::Duration;
+use tracing::{debug, info, warn};
+
+pub struct IngestionService {
+    db: Database,
+    decoder_registry: DecoderRegistry,
+}
+
+impl IngestionService {
+    pub fn new(db: Database, decoder_registry: DecoderRegistry) -> Self {
+        Self {
+            db,
+            decoder_registry,
+        }
+    }
+
+    pub async fn run(&self, mqtt_settings: MqttSettings) -> anyhow::Result<()> {
+        let mut mqttoptions = MqttOptions::new(
+            "sha-collector",
+            mqtt_settings.host.as_str(),
+            mqtt_settings.port,
+        );
+        mqttoptions.set_keep_alive(Duration::from_secs(5));
+
+        let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
+        client.subscribe("sensors/+/+", QoS::AtLeastOnce).await?;
+
+        info!("Running Ingestion service");
+        loop {
+            let event = eventloop.poll().await?;
+            match event {
+                Event::Incoming(Publish(packet)) => {
+                    let input = RawInput::Mqtt {
+                        topic: packet.topic.to_string(),
+                        payload: packet.payload.to_vec(),
+                    };
+                    self.process(input).await;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    pub async fn process(&self, input: RawInput) {
+        if let Err(e) = self.try_process(&input).await {
+            warn!(
+                error = %e,
+                source = %input_label(&input),
+                "Failed to process input – skipping"
+            );
+        }
+    }
+
+    async fn try_process(&self, input: &RawInput) -> anyhow::Result<()> {
+        let readings = self.decoder_registry.decode(input)?;
+
+        if readings.is_empty() {
+            debug!(
+                source = %input_label(input),
+                "Decoder returned no readings – skipping"
+            );
+            return Ok(());
+        }
+
+        for reading in readings {
+            self.persist(reading).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn persist(&self, reading: DecodedSensorReading) -> anyhow::Result<()> {
+        let sensor = self.resolve_sensor(reading.channel.as_str()).await?;
+
+        let row = GenericSensorReading {
+            time: Some(Utc::now()),
+            sensor_id: sensor.id,
+            value: reading.value,
+        };
+
+        self.db.save_sensor_reading(&row, &sensor.id).await?;
+
+        info!(
+            sensor_id = %sensor.id,
+            topic = reading.channel,
+            value     = reading.value,
+            "Reading persisted"
+        );
+
+        Ok(())
+    }
+
+    async fn resolve_sensor(&self, topic: &str) -> anyhow::Result<Sensor> {
+        if let Some(sensor) = self.db.get_sensor_by_topic(topic).await? {
+            return Ok(sensor);
+        }
+        let (channel, unit) = match channel_from_topic(topic) {
+            Some((channel, unit)) => (channel.to_string(), Some(unit.to_string())),
+            None => ("unknown".to_string(), None),
+        };
+        self.db
+            .save_sensor(Sensor {
+                id: Uuid::new_v4(),
+                custom_id: Some(topic.to_string()),
+                device_id: None,
+                channel,
+                unit,
+                description: None,
+                created_at: Utc::now(),
+            })
+            .await
+    }
+}

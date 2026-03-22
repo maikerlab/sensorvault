@@ -1,28 +1,25 @@
 pub mod models;
 
-use crate::db::models::{Sensor, SensorData};
+use crate::persistence::models::{Sensor, SensorData};
 use chrono::Utc;
 use common::models::GenericSensorReading;
 use common::settings::DatabaseSettings;
+use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::types::Uuid;
-use sqlx::PgPool;
 
 pub struct Database {
     pool: PgPool,
 }
 
 impl Database {
-    pub async fn new(config: DatabaseSettings) -> anyhow::Result<Self> {
+    pub async fn connect(config: DatabaseSettings) -> anyhow::Result<Self> {
         let url = config.url.as_str();
         let pool = PgPoolOptions::new().max_connections(3).connect(url).await?;
         Ok(Self { pool })
     }
 
-    pub async fn get_sensor_by_custom_id(
-        &self,
-        custom_id: &str,
-    ) -> anyhow::Result<Sensor> {
+    pub async fn get_sensor_by_topic(&self, topic: &str) -> anyhow::Result<Option<Sensor>> {
         let sensor = sqlx::query_as!(
             Sensor,
             r#"
@@ -30,9 +27,9 @@ impl Database {
                 FROM sensors
                 WHERE custom_id = $1
             "#,
-            custom_id
+            topic
         )
-        .fetch_one(&self.pool)
+        .fetch_optional(&self.pool)
         .await?;
         Ok(sensor)
     }

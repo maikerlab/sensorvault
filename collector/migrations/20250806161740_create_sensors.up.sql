@@ -41,7 +41,7 @@ CREATE TABLE sensor_data
     time      TIMESTAMPTZ      NOT NULL,
     sensor_id UUID             NOT NULL,
     value     DOUBLE PRECISION NOT NULL,
-    CONSTRAINT fk_sensor_data_sensors FOREIGN KEY (sensor_id) REFERENCES sensors (id)
+    CONSTRAINT fk_sensor_data_sensors FOREIGN KEY (sensor_id) REFERENCES sensors (id) ON DELETE CASCADE
 ) WITH (
       tsdb.hypertable,
       tsdb.partition_column = 'time'

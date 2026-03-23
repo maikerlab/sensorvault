@@ -4,35 +4,35 @@ mod input;
 use crate::ingestion::decoder::raw::{channel_from_topic, input_label};
 use crate::ingestion::decoder::{DecodedSensorReading, DecoderRegistry};
 use crate::ingestion::input::RawInput;
-use crate::persistence::Database;
 use chrono::Utc;
 use core::models::{CreateSensor, CreateSensorData, Sensor};
-use core::settings::MqttSettings;
+use infra::persistence::{SensorDataRepository, SensorRepository};
 use rumqttc::Packet::Publish;
 use rumqttc::{AsyncClient, Event, MqttOptions, QoS};
 use std::time::Duration;
 use tracing::{debug, info, warn};
-use infra::persistence::{SensorDataRepository, SensorRepository};
 
-pub struct IngestionService {
-    db: Database,
+pub struct IngestionService<R>
+where
+    R: SensorRepository + SensorDataRepository,
+{
+    db: R,
     decoder_registry: DecoderRegistry,
 }
 
-impl IngestionService {
-    pub fn new(db: Database, decoder_registry: DecoderRegistry) -> Self {
+impl<R> IngestionService<R>
+where
+    R: SensorRepository + SensorDataRepository,
+{
+    pub fn new(db: R, decoder_registry: DecoderRegistry) -> Self {
         Self {
             db,
             decoder_registry,
         }
     }
 
-    pub async fn run(&self, mqtt_settings: MqttSettings) -> anyhow::Result<()> {
-        let mut mqttoptions = MqttOptions::new(
-            "sha-collector",
-            mqtt_settings.host.as_str(),
-            mqtt_settings.port,
-        );
+    pub async fn run(&self, mqtt_host: String, mqtt_port: u16) -> anyhow::Result<()> {
+        let mut mqttoptions = MqttOptions::new("sha-collector", mqtt_host.as_str(), mqtt_port);
         mqttoptions.set_keep_alive(Duration::from_secs(5));
 
         let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);

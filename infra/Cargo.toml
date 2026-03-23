@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 core = { path = "../core" }
 anyhow = "1.0.102"
+sqlx = { version = "0.8.6", features = ["postgres", "chrono", "uuid"] }
+chrono = "0.4.44"

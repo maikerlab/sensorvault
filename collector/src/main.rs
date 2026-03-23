@@ -1,29 +1,29 @@
+mod config;
 mod ingestion;
-mod persistence;
 
 use crate::ingestion::IngestionService;
 use crate::ingestion::decoder::raw::RawMQTTDecoder;
 use crate::ingestion::decoder::{DecoderRegistry, SensorDataDecoder};
-use crate::persistence::Database;
 use anyhow::Result;
-use core::settings::AppConfig;
+use config::AppConfig;
+use infra::persistence::postgres::PostgresDatabase;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // init logging
+    // Init logging
     tracing_subscriber::fmt::init();
 
     // Load config
-    let settings = AppConfig::load();
+    let config = AppConfig::load();
 
-    // Connect persistence
-    let db = Database::connect(settings.database).await?;
+    // Connect to database
+    let db = PostgresDatabase::connect(config.database.url, config.database.max_connections).await?;
 
-    // Define decoders
+    // Define used decoders + registry
     let decoders: Vec<Box<dyn SensorDataDecoder>> = vec![Box::new(RawMQTTDecoder)];
     let decoder_registry = DecoderRegistry::new(decoders);
 
     // Create and run ingestion service
     let ingestion = IngestionService::new(db, decoder_registry);
-    ingestion.run(settings.mqtt).await
+    ingestion.run(config.mqtt.host, config.mqtt.port).await
 }

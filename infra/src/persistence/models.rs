@@ -69,6 +69,7 @@ impl Display for SensorDataPg {
 
 #[cfg(test)]
 mod tests {
+    use sqlx::types::chrono::Utc;
     use super::*;
 
     #[test]

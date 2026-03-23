@@ -1,6 +1,5 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use core::settings::AppConfig;
 use rand::RngExt;
 use rand::prelude::IndexedRandom;
 use rumqttc::{Client, Connection, MqttOptions, QoS};
@@ -75,12 +74,10 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     debug!("{:?}", cli);
 
-    let config = AppConfig::load();
-    info!(
-        "Connecting to MQTT broker: {}:{}",
-        config.mqtt.host, config.mqtt.port
-    );
-    let mut mqttoptions = MqttOptions::new("mqtt-simulator", config.mqtt.host, config.mqtt.port);
+    let mqtt_host = "localhost";
+    let mqtt_port = 1883;
+    info!("Connecting to MQTT broker: {}:{}", mqtt_host, mqtt_port);
+    let mut mqttoptions = MqttOptions::new("mqtt-simulator", mqtt_host, mqtt_port);
     mqttoptions.set_keep_alive(Duration::from_secs(5));
     let (client, mut connection) = Client::new(mqttoptions, 10);
 

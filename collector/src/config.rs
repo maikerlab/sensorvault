@@ -4,30 +4,32 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct AppConfig {
-    pub database: DatabaseSettings,
-    pub mqtt: MqttSettings,
+    pub database: DatabaseConfig,
+    pub mqtt: MqttConfig,
 }
 
 #[derive(Deserialize, Clone, Debug)]
-pub struct DatabaseSettings {
+pub struct DatabaseConfig {
     pub url: String,
+    pub max_connections: u32,
 }
 
 #[derive(Deserialize, Clone, Debug)]
-pub struct MqttSettings {
+pub struct MqttConfig {
     pub host: String,
     pub port: u16,
 }
 
 impl AppConfig {
     pub fn load() -> Self {
-        let settings_file = File::new("settings.toml", Toml);
+        let settings_file = File::new("app_config.toml", Toml);
         let settings = Config::builder()
             .add_source(settings_file.required(false))
             .add_source(config::Environment::with_prefix("SHA")
                 .try_parsing(true)
                 .separator("_"))
             .set_default("database.url", "postgres://iot:sensor@localhost/sensor_db").unwrap()
+            .set_default("database.max_connections", 3).unwrap()
             .set_default("mqtt.host", "localhost").unwrap()
             .set_default("mqtt.port", 1883).unwrap()
             .build()

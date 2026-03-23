@@ -1,5 +1,6 @@
 [database]
 url = "postgres://iot:sensor@localhost/sensor_db"
+max_connections = 3
 
 [mqtt]
 host = "localhost"

@@ -1,26 +1,25 @@
-mod models;
-
 use crate::persistence::models::{SensorDataPg, SensorPg};
+use crate::persistence::{SensorDataRepository, SensorRepository};
 use core::models::SensorData;
 use core::models::{CreateSensor, CreateSensorData, Sensor};
-use core::settings::DatabaseSettings;
-use infra::persistence::{SensorDataRepository, SensorRepository};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 
-pub struct Database {
+pub struct PostgresDatabase {
     pool: PgPool,
 }
 
-impl Database {
-    pub async fn connect(config: DatabaseSettings) -> anyhow::Result<Self> {
-        let url = config.url.as_str();
-        let pool = PgPoolOptions::new().max_connections(3).connect(url).await?;
+impl PostgresDatabase {
+    pub async fn connect(connection_url: String, max_connections: u32) -> anyhow::Result<Self> {
+        let pool = PgPoolOptions::new()
+            .max_connections(max_connections)
+            .connect(connection_url.as_str())
+            .await?;
         Ok(Self { pool })
     }
 }
 
-impl SensorRepository for Database {
+impl SensorRepository for PostgresDatabase {
     async fn find_sensor_by_id(&self, id: &str) -> anyhow::Result<Option<Sensor>> {
         let sensor: Option<SensorPg> = sqlx::query_as(
             r#"
@@ -53,7 +52,7 @@ impl SensorRepository for Database {
     }
 }
 
-impl SensorDataRepository for Database {
+impl SensorDataRepository for PostgresDatabase {
     async fn save_sensor_reading(&self, reading: &CreateSensorData) -> anyhow::Result<SensorData> {
         let sensor_data: SensorDataPg = sqlx::query_as(
             r#"

@@ -5,15 +5,14 @@ use crate::ingestion::decoder::raw::{channel_from_topic, input_label};
 use crate::ingestion::decoder::{DecodedSensorReading, DecoderRegistry};
 use crate::ingestion::input::RawInput;
 use crate::persistence::Database;
-use crate::persistence::models::Sensor;
 use chrono::Utc;
-use common::models::GenericSensorReading;
-use common::settings::MqttSettings;
+use core::models::{CreateSensor, CreateSensorData, Sensor};
+use core::settings::MqttSettings;
 use rumqttc::Packet::Publish;
 use rumqttc::{AsyncClient, Event, MqttOptions, QoS};
-use sqlx::types::Uuid;
 use std::time::Duration;
 use tracing::{debug, info, warn};
+use infra::persistence::{SensorDataRepository, SensorRepository};
 
 pub struct IngestionService {
     db: Database,
@@ -86,13 +85,13 @@ impl IngestionService {
     async fn persist(&self, reading: DecodedSensorReading) -> anyhow::Result<()> {
         let sensor = self.resolve_sensor(reading.channel.as_str()).await?;
 
-        let row = GenericSensorReading {
-            time: Some(Utc::now()),
-            sensor_id: sensor.id,
+        let row = CreateSensorData {
+            time: Utc::now(),
+            sensor_id: sensor.id.clone(),
             value: reading.value,
         };
 
-        self.db.save_sensor_reading(&row, &sensor.id).await?;
+        self.db.save_sensor_reading(&row).await?;
 
         info!(
             sensor_id = %sensor.id,
@@ -113,14 +112,11 @@ impl IngestionService {
             None => ("unknown".to_string(), None),
         };
         self.db
-            .save_sensor(Sensor {
-                id: Uuid::new_v4(),
-                custom_id: Some(topic.to_string()),
-                device_id: None,
+            .save_sensor(CreateSensor {
+                id: topic.to_string(),
                 channel,
                 unit,
                 description: None,
-                created_at: Utc::now(),
             })
             .await
     }

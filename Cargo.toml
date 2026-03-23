@@ -1,15 +1,22 @@
 [workspace]
-resolver = "3"
 members = [
-    "common",
+    "core",
     "collector",
-    "mqtt_sim"
+    "mqtt_sim",
+    "sha-cli",
 ]
+resolver = "3"
 
 [workspace.dependencies]
-tracing = { version = "0.1" }
-tracing-subscriber = { version = "0.3", default-features = true, features = ["local-time"] }
 anyhow = "1.0.99"
+
+[workspace.dependencies.tracing]
+version = "0.1"
+
+[workspace.dependencies.tracing-subscriber]
+version = "0.3"
+features = ["local-time"]
+default-features = true
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3

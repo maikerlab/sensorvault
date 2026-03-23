@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use common::settings::AppConfig;
+use core::settings::AppConfig;
 use rand::RngExt;
 use rand::prelude::IndexedRandom;
 use rumqttc::{Client, Connection, MqttOptions, QoS};

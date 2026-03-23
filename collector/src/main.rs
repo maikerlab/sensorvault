@@ -6,7 +6,7 @@ use crate::ingestion::decoder::raw::RawMQTTDecoder;
 use crate::ingestion::decoder::{DecoderRegistry, SensorDataDecoder};
 use crate::persistence::Database;
 use anyhow::Result;
-use common::settings::AppConfig;
+use core::settings::AppConfig;
 
 #[tokio::main]
 async fn main() -> Result<()> {

@@ -6,7 +6,7 @@ CREATE TABLE devices
     material_no VARCHAR(64),
     serial_no   VARCHAR(64),
 
-    -- ID if device cannot be identified by material and serial no. (e.g. only by mqtt topic)
+    -- ID if device cannot be identified by material and serial no.
     custom_id   VARCHAR(255),
 
     name        TEXT        NOT NULL,
@@ -26,8 +26,7 @@ CREATE TABLE devices
 
 CREATE TABLE sensors
 (
-    id          UUID                 DEFAULT gen_random_uuid() PRIMARY KEY,
-    custom_id   VARCHAR(64),          -- e.g. sensors/temp/123 (MQTT)
+    id          VARCHAR(64) PRIMARY KEY,
     device_id   UUID,
     channel     VARCHAR(64) NOT NULL, -- e.g. temperature, signal_strength
     unit        VARCHAR(20),          -- "°C" | "%" | "dB"
@@ -39,7 +38,7 @@ CREATE TABLE sensors
 CREATE TABLE sensor_data
 (
     time      TIMESTAMPTZ      NOT NULL,
-    sensor_id UUID             NOT NULL,
+    sensor_id VARCHAR(64)      NOT NULL,
     value     DOUBLE PRECISION NOT NULL,
     CONSTRAINT fk_sensor_data_sensors FOREIGN KEY (sensor_id) REFERENCES sensors (id) ON DELETE CASCADE
 ) WITH (

@@ -1,12 +1,12 @@
-pub mod models;
+mod models;
 
-use crate::persistence::models::{Sensor, SensorData};
-use chrono::Utc;
-use common::models::GenericSensorReading;
-use common::settings::DatabaseSettings;
+use crate::persistence::models::{SensorDataPg, SensorPg};
+use core::models::SensorData;
+use core::models::{CreateSensor, CreateSensorData, Sensor};
+use core::settings::DatabaseSettings;
+use infra::persistence::{SensorDataRepository, SensorRepository};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
-use sqlx::types::Uuid;
 
 pub struct Database {
     pool: PgPool,
@@ -18,78 +18,74 @@ impl Database {
         let pool = PgPoolOptions::new().max_connections(3).connect(url).await?;
         Ok(Self { pool })
     }
+}
 
-    pub async fn get_sensor_by_topic(&self, topic: &str) -> anyhow::Result<Option<Sensor>> {
-        let sensor = sqlx::query_as!(
-            Sensor,
+impl SensorRepository for Database {
+    async fn get_sensor_by_topic(&self, topic: &str) -> anyhow::Result<Option<Sensor>> {
+        let sensor: Option<SensorPg> = sqlx::query_as(
             r#"
-                SELECT id, custom_id, device_id, channel, unit, description, created_at
+                SELECT id, device_id, channel, unit, description, created_at
                 FROM sensors
-                WHERE custom_id = $1
+                WHERE id = $1
             "#,
-            topic
         )
+        .bind(topic)
         .fetch_optional(&self.pool)
         .await?;
-        Ok(sensor)
+        Ok(sensor.map(|s| sensor_from_db(s)))
     }
 
-    pub async fn save_sensor(&self, dto: Sensor) -> anyhow::Result<Sensor> {
-        let sensor = sqlx::query_as!(
-            Sensor,
+    async fn save_sensor(&self, sensor: CreateSensor) -> anyhow::Result<Sensor> {
+        let sensor: SensorPg = sqlx::query_as(
             r#"
-                INSERT INTO sensors (custom_id, device_id, channel, unit, description)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING *
+                INSERT INTO sensors (id, channel, unit, description)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id, device_id, channel, unit, description
             "#,
-            dto.custom_id,
-            dto.device_id,
-            dto.channel,
-            dto.unit,
-            dto.description
         )
+        .bind(sensor.id)
+        .bind(sensor.channel)
+        .bind(sensor.unit)
+        .bind(sensor.description)
         .fetch_one(&self.pool)
         .await?;
-        Ok(sensor)
+        Ok(sensor_from_db(sensor))
     }
+}
 
-    pub async fn save_sensor_reading(
-        &self,
-        reading: &GenericSensorReading,
-        sensor_id: &Uuid,
-    ) -> anyhow::Result<SensorData> {
-        let sensor_data = sqlx::query_as!(
-            SensorData,
+impl SensorDataRepository for Database {
+    async fn save_sensor_reading(&self, reading: &CreateSensorData) -> anyhow::Result<SensorData> {
+        let sensor_data: SensorDataPg = sqlx::query_as(
             r#"
                 INSERT INTO sensor_data (time, sensor_id, value)
                 VALUES ($1, $2, $3)
-                RETURNING *
+                RETURNING time, sensor_id, value
             "#,
-            reading.time.unwrap_or(Utc::now()),
-            sensor_id,
-            reading.value
         )
+        .bind(reading.time)
+        .bind(reading.sensor_id.as_str())
+        .bind(reading.value)
         .fetch_one(&self.pool)
         .await?;
-        Ok(sensor_data)
+        Ok(sensor_data_from_db(sensor_data))
     }
+}
 
-    pub async fn get_sensor_readings_by_sensor_id(
-        &self,
-        sensor_id: Uuid,
-    ) -> anyhow::Result<Vec<SensorData>> {
-        let sensor_data = sqlx::query_as!(
-            SensorData,
-            r#"
-                SELECT time, sensor_id, value
-                FROM sensor_data
-                WHERE sensor_id = $1
-                ORDER BY time DESC
-            "#,
-            sensor_id
-        )
-        .fetch_all(&self.pool)
-        .await?;
-        Ok(sensor_data)
+fn sensor_from_db(s: SensorPg) -> Sensor {
+    Sensor {
+        id: s.id,
+        device_id: s.device_id,
+        channel: s.channel,
+        unit: s.unit,
+        description: s.description,
+        created_at: s.created_at,
+    }
+}
+
+fn sensor_data_from_db(sd: SensorDataPg) -> SensorData {
+    SensorData {
+        time: sd.time,
+        sensor_id: sd.sensor_id,
+        value: sd.value,
     }
 }

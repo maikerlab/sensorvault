@@ -83,6 +83,10 @@ impl IngestionService {
     }
 
     async fn persist(&self, reading: DecodedSensorReading) -> anyhow::Result<()> {
+        debug!(
+            reading = %reading,
+            "Persisting reading"
+        );
         let sensor = self.resolve_sensor(reading.channel.as_str()).await?;
 
         let row = CreateSensorData {
@@ -104,7 +108,7 @@ impl IngestionService {
     }
 
     async fn resolve_sensor(&self, topic: &str) -> anyhow::Result<Sensor> {
-        if let Some(sensor) = self.db.get_sensor_by_topic(topic).await? {
+        if let Some(sensor) = self.db.find_sensor_by_id(topic).await? {
             return Ok(sensor);
         }
         let (channel, unit) = match channel_from_topic(topic) {

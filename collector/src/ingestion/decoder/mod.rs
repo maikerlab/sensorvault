@@ -1,5 +1,6 @@
 pub mod raw;
 
+use std::fmt::{Display, Formatter};
 use crate::ingestion::input::RawInput;
 use tracing::log::warn;
 
@@ -8,6 +9,12 @@ pub struct DecodedSensorReading {
     pub channel: String,
     pub value: f64,
     pub unit: Option<String>,
+}
+
+impl Display for DecodedSensorReading {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} {:?}", self.channel, self.value, self.unit)
+    }
 }
 
 pub trait SensorDataDecoder {

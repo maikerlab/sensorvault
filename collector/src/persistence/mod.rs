@@ -21,7 +21,7 @@ impl Database {
 }
 
 impl SensorRepository for Database {
-    async fn get_sensor_by_topic(&self, topic: &str) -> anyhow::Result<Option<Sensor>> {
+    async fn find_sensor_by_id(&self, id: &str) -> anyhow::Result<Option<Sensor>> {
         let sensor: Option<SensorPg> = sqlx::query_as(
             r#"
                 SELECT id, device_id, channel, unit, description, created_at
@@ -29,10 +29,10 @@ impl SensorRepository for Database {
                 WHERE id = $1
             "#,
         )
-        .bind(topic)
+        .bind(id)
         .fetch_optional(&self.pool)
         .await?;
-        Ok(sensor.map(|s| sensor_from_db(s)))
+        Ok(sensor.map(|s| s.into()))
     }
 
     async fn save_sensor(&self, sensor: CreateSensor) -> anyhow::Result<Sensor> {
@@ -40,7 +40,7 @@ impl SensorRepository for Database {
             r#"
                 INSERT INTO sensors (id, channel, unit, description)
                 VALUES ($1, $2, $3, $4)
-                RETURNING id, device_id, channel, unit, description
+                RETURNING id, device_id, channel, unit, description, created_at
             "#,
         )
         .bind(sensor.id)
@@ -49,7 +49,7 @@ impl SensorRepository for Database {
         .bind(sensor.description)
         .fetch_one(&self.pool)
         .await?;
-        Ok(sensor_from_db(sensor))
+        Ok(sensor.into())
     }
 }
 
@@ -67,25 +67,6 @@ impl SensorDataRepository for Database {
         .bind(reading.value)
         .fetch_one(&self.pool)
         .await?;
-        Ok(sensor_data_from_db(sensor_data))
-    }
-}
-
-fn sensor_from_db(s: SensorPg) -> Sensor {
-    Sensor {
-        id: s.id,
-        device_id: s.device_id,
-        channel: s.channel,
-        unit: s.unit,
-        description: s.description,
-        created_at: s.created_at,
-    }
-}
-
-fn sensor_data_from_db(sd: SensorDataPg) -> SensorData {
-    SensorData {
-        time: sd.time,
-        sensor_id: sd.sensor_id,
-        value: sd.value,
+        Ok(sensor_data.into())
     }
 }

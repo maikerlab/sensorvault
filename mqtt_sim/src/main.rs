@@ -53,8 +53,8 @@ fn handle_send_loop(
             Some(st) => st.as_str(),
         };
         let (sensor_id, value) = match sensor_type {
-            "temperature" => (rng.random_range(1..5), rng.random_range(-20.0..50.0)),
-            "humidity" => (rng.random_range(6..10), rng.random_range(0.0..100.0)),
+            "temperature" => (rng.random_range(1..10), rng.random_range(-20.0..50.0)),
+            "humidity" => (rng.random_range(11..20), rng.random_range(0.0..100.0)),
             _ => (1, 0.0),
         };
         let topic = format!("sensors/{}/{}", sensor_type, sensor_id);

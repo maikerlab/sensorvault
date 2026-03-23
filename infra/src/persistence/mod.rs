@@ -4,7 +4,7 @@ use core::models::Sensor;
 use core::models::SensorData;
 
 pub trait SensorRepository {
-    fn get_sensor_by_topic(&self, topic: &str) -> impl Future<Output = anyhow::Result<Option<Sensor>>> + Send;
+    fn find_sensor_by_id(&self, topic: &str) -> impl Future<Output = anyhow::Result<Option<Sensor>>> + Send;
     fn save_sensor(&self, sensor: CreateSensor) -> impl Future<Output = anyhow::Result<Sensor>> + Send;
 }
 

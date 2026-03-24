@@ -4,6 +4,7 @@ use ort::session::{Session, SessionOutputs, builder::GraphOptimizationLevel};
 use ort::value::TensorRef;
 use std::path::Path;
 use std::sync::Mutex;
+use tracing::{debug, info};
 
 /// Input features – order must match Python training exactly
 #[derive(Debug)]
@@ -72,29 +73,47 @@ impl SensorHealthModel {
         let outputs: SessionOutputs =
             session.run(inputs!["float_input" => TensorRef::from_array_view(&input)?])?;
         // temporarily added to see output names and shapes
-        for (name, value) in outputs.iter() {
-            println!("output: {name}");
-        }
+        let outputs_debug = outputs
+            .iter()
+            .map(|(output, _)| output.to_string())
+            .collect::<Vec<String>>();
+        debug!(
+            outputs = %format!("{:?}", outputs_debug),
+            "predict outputs"
+        );
 
         // IsolationForest outputs:
         // "label"  → i64 tensor, shape [1],    values: 1 (normal) or -1 (anomaly)
         // "scores" → f32 tensor, shape [1, 2], anomaly score per class
         let labels = outputs["label"].try_extract_array::<i64>()?;
         let scores = outputs["scores"].try_extract_array::<f32>()?;
-        println!("label shape:  {:?}", labels.shape());
-        println!("scores shape: {:?}", scores.shape());
+        debug!(
+            label_shape = %format!("{:?}", labels.shape()),
+            scores_shape = %format!("{:?}", scores.shape()),
+            "IsolationForest outputs"
+        );
 
         let label = labels[[0, 0]]; // 1 or -1
         // TODO: should be scores[[0, 0]], but model only has [1,1] shape - why??
         let raw_score = scores[[0, 0]]; // normal class score
-        println!("raw label: {label}");
-        println!("raw score: {raw_score}");
+        debug!(
+            raw_label = %label.to_string(),
+            raw_score = %raw_score.to_string(),
+            "raw"
+        );
 
-        Ok(Prediction {
+        let prediction = Prediction {
             is_anomaly: label == -1,
             health_score: self.score_to_health(raw_score),
             raw_score,
-        })
+        };
+        info!(
+            health_score = %prediction.health_score,
+            is_anomaly = %prediction.is_anomaly,
+            raw_score = %prediction.raw_score,
+            "Prediction result ready"
+        );
+        Ok(prediction)
     }
 
     fn score_to_health(&self, score: f32) -> u8 {

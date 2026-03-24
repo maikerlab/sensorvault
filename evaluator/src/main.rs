@@ -5,6 +5,7 @@ use std::path::Path;
 use std::sync::Arc;
 use tonic::transport::Server;
 use tonic::{Code, Request, Response, Status};
+use tracing::info;
 
 mod model;
 pub mod evaluation {
@@ -30,7 +31,7 @@ impl EvaluationService for SensorEvaluationService {
         request: Request<EvaluationRequest>,
     ) -> Result<Response<EvaluationReply>, Status> {
         let request: EvaluationRequest = request.into_inner();
-        println!("Received {:?}", request);
+        info!("Received {:?}", request);
         let normal = Features {
             value: request.temperature as f32,
             mean: 21.1,
@@ -54,13 +55,16 @@ impl EvaluationService for SensorEvaluationService {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // init logging
+    tracing_subscriber::fmt::init();
+
     let onnx_path = Path::new("evaluator/onnx/sensor_health.onnx");
     let model = SensorHealthModel::load(onnx_path).expect("failed to load sensor health model");
 
     let addr = "[::1]:50051".parse()?;
     let grpc_service = SensorEvaluationService::new(model);
 
-    println!("gRPC server listening on {addr}");
+    info!("gRPC server listening on {addr}");
 
     Server::builder()
         .add_service(EvaluationServiceServer::new(grpc_service))

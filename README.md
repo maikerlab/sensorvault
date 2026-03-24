@@ -72,13 +72,13 @@ cargo run -p mqtt_sim loop temp
 ...or send a custom message to a topic:
 
 ```shell
-cargo run -p mqtt_sim send sensors/temp/1 23.5
+cargo run -p mqtt_sim send sensors/temperature/1 23.5
 ```
 
 Of course you can also use your favorite MQTT client (like Eclipse Mosquitto):
 
 ```shell
-mosquitto_pub -h localhost -p 1883 -t /sensors/temp/1 -m "23.5"
+mosquitto_pub -h localhost -p 1883 -t /sensors/temperature/1 -m "23.5"
 ```
 
 ...or as JSON in SenML format:
@@ -92,5 +92,5 @@ mosquitto_pub -h localhost -p 1883 -t /sensors/temp/1 -m "23.5"
 ```
 
 ```shell
-mosquitto_pub -h $MQTT_HOST -p $MQTT_PORT -t /sensors/temp/1 -m "{ 'n': 'my-sensor-1', 'v': 23.5, 'u': 'C' }"
+mosquitto_pub -h $MQTT_HOST -p $MQTT_PORT -t /sensors/temperature/1 -m "{ 'n': 'my-sensor-1', 'v': 23.5, 'u': 'C' }"
 ```

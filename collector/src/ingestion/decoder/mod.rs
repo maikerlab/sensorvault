@@ -1,11 +1,12 @@
-pub mod raw;
+pub mod mqtt;
 
-use std::fmt::{Display, Formatter};
 use crate::ingestion::input::RawInput;
+use std::fmt::{Display, Formatter};
 use tracing::log::warn;
 
 #[derive(Debug)]
 pub struct DecodedSensorReading {
+    pub id: String,
     pub channel: String,
     pub value: f64,
     pub unit: Option<String>,
@@ -32,8 +33,18 @@ pub struct DecoderRegistry {
 }
 
 impl DecoderRegistry {
-    pub fn new(decoders: Vec<Box<dyn SensorDataDecoder>>) -> DecoderRegistry {
-        Self { decoders }
+    pub fn new() -> DecoderRegistry {
+        Self {
+            decoders: Vec::new(),
+        }
+    }
+
+    pub fn register<D>(mut self, decoder: D) -> DecoderRegistry
+    where
+        D: SensorDataDecoder + 'static,
+    {
+        self.decoders.push(Box::new(decoder));
+        self
     }
 
     pub fn decode(&self, input: &RawInput) -> anyhow::Result<Vec<DecodedSensorReading>> {

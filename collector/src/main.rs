@@ -2,7 +2,7 @@ mod app_config;
 mod ingestion;
 
 use crate::ingestion::IngestionService;
-use crate::ingestion::decoder::raw::RawMQTTDecoder;
+use crate::ingestion::decoder::mqtt::RawMQTTDecoder;
 use crate::ingestion::decoder::{DecoderRegistry, SensorDataDecoder};
 use anyhow::Result;
 use app_config::AppConfig;
@@ -21,8 +21,8 @@ async fn main() -> Result<()> {
         PostgresDatabase::connect(config.database.url, config.database.max_connections).await?;
 
     // Define used decoders + registry
-    let decoders: Vec<Box<dyn SensorDataDecoder>> = vec![Box::new(RawMQTTDecoder)];
-    let decoder_registry = DecoderRegistry::new(decoders);
+    let decoder_registry = DecoderRegistry::new()
+        .register(RawMQTTDecoder);
 
     // Create and run ingestion service
     let ingestion = IngestionService::new(db, decoder_registry);

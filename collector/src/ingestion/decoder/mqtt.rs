@@ -19,6 +19,7 @@ impl SensorDataDecoder for RawMQTTDecoder {
     fn matches(&self, input: &RawInput) -> bool {
         matches!(
             input,
+            // TODO: be more explicit in what can/cannot be decoded!
             RawInput::Mqtt { topic, .. } if !topic.starts_with("zigbee2mqtt/")
         )
     }
@@ -34,28 +35,20 @@ impl SensorDataDecoder for RawMQTTDecoder {
             .parse::<f64>()
             .context("payload is not a valid float")?;
 
+        let (channel, unit) = match channel_and_unit_from_topic(topic) {
+            Some((channel, unit)) => (channel.to_string(), Some(unit.to_string())),
+            None => ("unknown".to_string(), None),
+        };
         Ok(vec![DecodedSensorReading {
-            channel: topic.to_string(),
-            unit: None,
+            id: topic.to_string(),
+            channel,
+            unit,
             value,
         }])
     }
 }
 
-/// Helper for readable log messages – no logic here
-pub fn input_label(input: &RawInput) -> String {
-    match input {
-        RawInput::Mqtt { topic, .. } => format!("mqtt:{topic}"),
-        RawInput::Manual {
-            material_no,
-            serial_no,
-            channel,
-            ..
-        } => format!("manual:{material_no}/{serial_no}/{channel}"),
-    }
-}
-
-pub fn channel_from_topic(topic: &str) -> Option<(&'static str, &'static str)> {
+fn channel_and_unit_from_topic(topic: &str) -> Option<(&'static str, &'static str)> {
     let segments: Vec<&str> = topic.split('/').collect();
     CHANNEL_UNITS
         .iter()

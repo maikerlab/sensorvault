@@ -1,14 +1,13 @@
 pub mod decoder;
 mod input;
 
-use crate::ingestion::decoder::raw::{channel_from_topic, input_label};
 use crate::ingestion::decoder::{DecodedSensorReading, DecoderRegistry};
 use crate::ingestion::input::RawInput;
 use chrono::Utc;
-use sensorvault_core::models::{CreateSensor, CreateSensorData, Sensor};
 use infra::persistence::{SensorDataRepository, SensorRepository};
 use rumqttc::Packet::Publish;
 use rumqttc::{AsyncClient, Event, MqttOptions, QoS};
+use sensorvault_core::models::{CreateSensor, CreateSensorData, Sensor};
 use std::time::Duration;
 use tracing::{debug, info, warn};
 
@@ -87,7 +86,7 @@ where
             reading = %reading,
             "Persisting reading"
         );
-        let sensor = self.resolve_sensor(reading.channel.as_str()).await?;
+        let sensor = self.resolve_sensor(&reading).await?;
 
         let row = CreateSensorData {
             time: Utc::now(),
@@ -107,21 +106,30 @@ where
         Ok(())
     }
 
-    async fn resolve_sensor(&self, topic: &str) -> anyhow::Result<Sensor> {
-        if let Some(sensor) = self.db.find_sensor_by_id(topic).await? {
+    async fn resolve_sensor(&self, reading: &DecodedSensorReading) -> anyhow::Result<Sensor> {
+        if let Some(sensor) = self.db.find_sensor_by_id(reading.id.as_str()).await? {
             return Ok(sensor);
         }
-        let (channel, unit) = match channel_from_topic(topic) {
-            Some((channel, unit)) => (channel.to_string(), Some(unit.to_string())),
-            None => ("unknown".to_string(), None),
-        };
         self.db
             .save_sensor(CreateSensor {
-                id: topic.to_string(),
-                channel,
-                unit,
+                id: reading.id.clone(),
+                channel: reading.channel.clone(),
+                unit: reading.unit.clone(),
                 description: None,
             })
             .await
+    }
+}
+
+/// Helper for readable log messages – no logic here
+pub fn input_label(input: &RawInput) -> String {
+    match input {
+        RawInput::Mqtt { topic, .. } => format!("mqtt:{topic}"),
+        RawInput::Manual {
+            material_no,
+            serial_no,
+            channel,
+            ..
+        } => format!("manual:{material_no}/{serial_no}/{channel}"),
     }
 }

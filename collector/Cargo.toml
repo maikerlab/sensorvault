@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.47", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 sqlx = { version = "0.8", features = [ "runtime-tokio", "tls-native-tls", "postgres", "uuid", "chrono" ] }
 chrono = "0.4"
 rumqttc = "0.25.1"
-core = { path = "../core" }
+sensorvault-core = { path = "../core" }
 infra = { path = "../infra" }
 anyhow.workspace = true
 tracing.workspace = true

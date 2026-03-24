@@ -5,7 +5,7 @@ use crate::ingestion::decoder::raw::{channel_from_topic, input_label};
 use crate::ingestion::decoder::{DecodedSensorReading, DecoderRegistry};
 use crate::ingestion::input::RawInput;
 use chrono::Utc;
-use core::models::{CreateSensor, CreateSensorData, Sensor};
+use sensorvault_core::models::{CreateSensor, CreateSensorData, Sensor};
 use infra::persistence::{SensorDataRepository, SensorRepository};
 use rumqttc::Packet::Publish;
 use rumqttc::{AsyncClient, Event, MqttOptions, QoS};

@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct SensorData {
     pub time: DateTime<Utc>,
     pub sensor_id: String,

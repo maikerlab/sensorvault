@@ -1,7 +1,7 @@
-use core::models::CreateSensor;
-use core::models::CreateSensorData;
-use core::models::Sensor;
-use core::models::SensorData;
+use sensorvault_core::models::CreateSensor;
+use sensorvault_core::models::CreateSensorData;
+use sensorvault_core::models::Sensor;
+use sensorvault_core::models::SensorData;
 
 pub mod postgres;
 mod models;
@@ -12,6 +12,7 @@ pub trait SensorRepository {
 }
 
 pub trait SensorDataRepository {
+    fn find_readings_by_sensor_id(&self, sensor_id: &str) -> impl Future<Output = anyhow::Result<Vec<SensorData>>> + Send;
     fn save_sensor_reading(&self, reading: &CreateSensorData) -> impl Future<Output = anyhow::Result<SensorData>> + Send;
 }
 

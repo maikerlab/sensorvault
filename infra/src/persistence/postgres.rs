@@ -1,7 +1,7 @@
 use crate::persistence::models::{SensorDataPg, SensorPg};
 use crate::persistence::{SensorDataRepository, SensorRepository};
-use core::models::SensorData;
-use core::models::{CreateSensor, CreateSensorData, Sensor};
+use sensorvault_core::models::SensorData;
+use sensorvault_core::models::{CreateSensor, CreateSensorData, Sensor};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 
@@ -53,6 +53,20 @@ impl SensorRepository for PostgresDatabase {
 }
 
 impl SensorDataRepository for PostgresDatabase {
+    async fn find_readings_by_sensor_id(&self, sensor_id: &str) -> anyhow::Result<Vec<SensorData>> {
+        let readings: Vec<SensorDataPg> = sqlx::query_as(
+            r#"
+                SELECT * FROM sensor_data
+                JOIN sensors s ON s.id = sensor_id
+                WHERE s.id = $1
+            "#,
+        )
+        .bind(sensor_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(readings.into_iter().map(|r| r.into()).collect())
+    }
+
     async fn save_sensor_reading(&self, reading: &CreateSensorData) -> anyhow::Result<SensorData> {
         let sensor_data: SensorDataPg = sqlx::query_as(
             r#"

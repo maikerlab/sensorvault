@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-core = { path = "../core" }
+sensorvault-core = { path = "../core" }
 anyhow = "1.0.102"
-sqlx = { version = "0.8.6", features = ["postgres", "chrono", "uuid"] }
+sqlx = { version = "0.8.6", features = ["postgres", "chrono", "uuid", "runtime-async-std"] }
 chrono = "0.4.44"

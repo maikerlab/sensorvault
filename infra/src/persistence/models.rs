@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use core::models::{Sensor, SensorData};
+use sensorvault_core::models::{Sensor, SensorData};
 use sqlx::FromRow;
 use sqlx::types::Uuid;
 use std::fmt::Display;

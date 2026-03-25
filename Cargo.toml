@@ -6,6 +6,7 @@ members = [
     "cli",
     "evaluator",
 ]
+default-members = ["core", "infra"]
 resolver = "3"
 
 [workspace.dependencies]

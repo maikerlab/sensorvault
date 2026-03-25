@@ -1,5 +1,5 @@
 #-- FOLDERS:
-../.idea/
+.idea/
 .vscode/
 .cargo/
 target/
@@ -10,7 +10,7 @@ mosquitto/
 .env
 .envrc
 .gitignore
-app_config.toml
+collector/app_config.toml
 docker-compose.yml
 build_docker.sh
 README.md

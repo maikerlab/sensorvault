@@ -38,10 +38,10 @@ services:
   collector:
     build:
       context: .
-      dockerfile: collector/Dockerfile
+      dockerfile: Dockerfile
     environment:
-      - SHM_MQTT_HOST=mqtt_broker
-      - SHM_MQTT_PORT=1883
+      - SHA_MQTT_HOST=mqtt_broker
+      - SHA_MQTT_PORT=1883
       - RUST_LOG=debug
     depends_on:
       - mqtt_broker

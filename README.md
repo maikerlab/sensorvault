@@ -1,4 +1,4 @@
-# Sensor Health Analyzer
+# SensorVault
 
 A system to collect data from all your sensors into a single "source of truth", enabling valuable insights and
 predictive maintenance.
@@ -22,11 +22,13 @@ predictive maintenance.
 - To test the functionality of the system, without the need to integrate a lot of physical sensors, a simulator is part
   of this project, which continuously sends MQTT messages to the collector (see [mqtt_sim](/mqtt_sim) crate)
 
-### SensorHealthAnalyzer
+### SensorVault
 
 - The **collector** service receives measurements from sensors and saves them into a database
 - All data received by sensors is saved in a [TimescaleDB](https://github.com/timescale/timescaledb)
 - Grafana can be used to aggregate and visualize the sensor data on a Dashboard
+- The **evaluator** service runs a gRPC server and handles requests to evaluate incoming sensor data. It runs inference on a trained Machine Learning model, exported to the ONNX format.
+- The **cli** is intended to be used to interact with the system, e.g. to run single evaluation requests, batch-import of sensor data, ...
 
 ## Project Structure
 
@@ -38,7 +40,8 @@ predictive maintenance.
 ├── infra               # Traits + implementation of all interaction with external services, such as databases
 ├── collector           # Receives measurements from MQTT broker and saves them to database
 ├── evaluator           # Handling evaluation requests via gRPC and returns predictions made by a ML model (in ONNX format)
-├── mqtt_sim            # CLI application for integration testing - e.g. publish random measurements to the collector
+├── cli                 # CLI application to interact with the system
+├── mqtt_sim            # CLI application for testing - publishes MQTT messages with sensor data to the collector
 ├── mosquitto           # Config for the Mosquitto MQTT broker running in Docker
 ├── Cargo.toml          # Cargo manifest for this workspace
 └── docker-compose.yml  # All services to run the whole system locally in Docker containers
@@ -60,8 +63,7 @@ This will run:
 - `collector` subscribes to messages at topic `sensors/+/+` (wildcards mean "sensor_type/id")
 - `mqtt_sim` simulates an MQTT sensor and publishes messages to the broker
 - `db`: TimescaleDB database, running at port 5432 - Required for collector to save the sensor measurements
-- `grafana`: For data aggregation, visualization and observability - UI accessible
-  at [localhost:3000](http://localhost:3000/)
+- `grafana`: For data aggregation, visualization and observability - UI accessible at [localhost:3000](http://localhost:3000/)
 
 ### Binaries
 

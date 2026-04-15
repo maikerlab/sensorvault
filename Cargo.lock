@@ -2562,6 +2562,7 @@ dependencies = [
  "sensorvault-core",
  "sensorvault-infra",
  "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -2602,6 +2603,7 @@ dependencies = [
  "chrono",
  "sensorvault-core",
  "sqlx",
+ "tracing",
 ]
 
 [[package]]

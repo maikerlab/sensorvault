@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug)]
 pub enum RawInput {
     Mqtt {
         topic: String,
@@ -14,6 +15,7 @@ pub enum RawInput {
     },
 }
 
+#[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SenMLRecord {
     #[serde(rename = "n")]

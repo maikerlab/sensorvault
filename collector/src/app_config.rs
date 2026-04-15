@@ -18,13 +18,16 @@ pub struct DatabaseConfig {
 pub struct MqttConfig {
     pub host: String,
     pub port: u16,
+    pub username: String,
+    pub password: String,
+    pub subscribe_topics: Vec<String>,
 }
 
 impl AppConfig {
     pub fn load() -> Self {
-        let settings_file = File::new("app_config.toml", Toml);
+        let settings_file = File::new("collector/app_config.toml", Toml);
         let settings = Config::builder()
-            .add_source(settings_file.required(false))
+            .add_source(settings_file.required(true))
             .add_source(config::Environment::with_prefix("SHA")
                 .try_parsing(true)
                 .separator("_"))

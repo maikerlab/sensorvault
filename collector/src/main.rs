@@ -27,5 +27,14 @@ async fn main() -> Result<()> {
 
     // Create and run ingestion service
     let ingestion = IngestionService::new(db, decoder_registry);
-    ingestion.run(config.mqtt.host, config.mqtt.port).await
+    let mqtt_conf = config.mqtt;
+    ingestion
+        .run(
+            mqtt_conf.host,
+            mqtt_conf.port,
+            mqtt_conf.username,
+            mqtt_conf.password,
+            mqtt_conf.subscribe_topics,
+        )
+        .await
 }

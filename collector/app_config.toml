@@ -5,3 +5,9 @@ max_connections = 3
 [mqtt]
 host = "localhost"
 port = 1883
+username = "sensorvault"
+password = "sensorvault"
+subscribe_topics = [
+    "zigbee2mqtt/+",
+    "meatometer/sensor/+/temperature",
+]

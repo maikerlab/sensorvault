@@ -30,18 +30,32 @@ where
         }
     }
 
-    pub async fn run(&self, mqtt_host: String, mqtt_port: u16) -> anyhow::Result<()> {
+    pub async fn run(
+        &self,
+        mqtt_host: String,
+        mqtt_port: u16,
+        username: String,
+        password: String,
+        subscribe_topics: Vec<String>,
+    ) -> anyhow::Result<()> {
+        info!("Connecting to MQTT broker at {}:{}", mqtt_host, mqtt_port);
+        info!("Subscribing to topics: {:?}", subscribe_topics);
         let mut mqttoptions = MqttOptions::new("sha-collector", mqtt_host.as_str(), mqtt_port);
         mqttoptions.set_keep_alive(Duration::from_secs(5));
+        mqttoptions.set_credentials(username, password);
+        mqttoptions.set_max_packet_size(1_048_576, 1_048_576);
 
         let (client, mut eventloop) = AsyncClient::new(mqttoptions, 10);
-        client.subscribe("sensors/+/+", QoS::AtLeastOnce).await?;
+        for topic in subscribe_topics {
+            client.subscribe(topic.as_str(), QoS::AtLeastOnce).await?;
+        }
 
         info!("Running Ingestion service");
         loop {
             let event = eventloop.poll().await?;
             match event {
                 Event::Incoming(Publish(packet)) => {
+                    debug!("Received incoming packet: {:?}", packet.topic);
                     let input = RawInput::Mqtt {
                         topic: packet.topic.to_string(),
                         payload: packet.payload.to_vec(),
@@ -94,13 +108,13 @@ where
             value: reading.value,
         };
 
-        self.db.save_sensor_reading(&row).await?;
+        let _ = self.db.save_sensor_reading(&row).await?;
 
         info!(
             sensor_id = %sensor.id,
-            topic = reading.channel,
+            channel = reading.channel,
             value     = reading.value,
-            "Reading persisted"
+            "Sensor reading persisted"
         );
 
         Ok(())

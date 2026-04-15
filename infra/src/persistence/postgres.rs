@@ -4,6 +4,7 @@ use sensorvault_core::models::SensorData;
 use sensorvault_core::models::{CreateSensor, CreateSensorData, Sensor};
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
+use tracing::info;
 
 pub struct PostgresDatabase {
     pool: PgPool,
@@ -11,6 +12,7 @@ pub struct PostgresDatabase {
 
 impl PostgresDatabase {
     pub async fn connect(connection_url: String, max_connections: u32) -> anyhow::Result<Self> {
+        info!("Connecting to postgres database...");
         let pool = PgPoolOptions::new()
             .max_connections(max_connections)
             .connect(connection_url.as_str())

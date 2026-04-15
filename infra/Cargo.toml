@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
+tracing.workspace = true
 sensorvault-core = { path = "../core" }
 sqlx = { version = "0.8.6", features = ["postgres", "chrono", "uuid", "runtime-async-std"] }
 chrono = "0.4.44"
